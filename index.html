@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Dynamic Rail Fence Cipher</title>
+  <style>
+    :root {
+      --bg: #fff0f6;
+      --card: #ffffff;
+      --pink: #ff5fa2;
+      --pink-dark: #e5488a;
+      --pink-soft: #ffd6e7;
+      --text: #4a2340;
+      --border: #f7b6cf;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #fff5f9, #ffe3ef);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(255, 95, 162, 0.15);
+      padding: 28px;
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      color: var(--pink-dark);
+    }
+
+    p.subtitle {
+      text-align: center;
+      margin-top: -6px;
+      margin-bottom: 24px;
+      color: #7a4f67;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: #fffafb;
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      font-weight: bold;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1.5px solid #ebb0c8;
+      font-size: 14px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.12);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: var(--pink);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover {
+      background: var(--pink-dark);
+    }
+
+    .result {
+      margin-top: 14px;
+      padding: 12px;
+      background: var(--pink-soft);
+      border-radius: 12px;
+      word-break: break-word;
+      min-height: 48px;
+      white-space: pre-wrap;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-size: 13px;
+      color: #7d5a6b;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Advanced Dynamic Rail Fence Cipher</h1>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Enkripsi</h2>
+        <label for="plainText">Plaintext</label>
+        <textarea id="plainText" placeholder="Masukkan plaintext..."></textarea>
+
+        <div class="row">
+          <div>
+            <label for="encRails">Jumlah Rail</label>
+            <input type="number" id="encRails" value="4" min="2" />
+          </div>
+          <div>
+            <label for="encKey">Key Numerik</label>
+            <input type="number" id="encKey" value="3124" min="1" />
+          </div>
+        </div>
+
+        <button onclick="handleEncrypt()">Enkripsi</button>
+
+        <label>Hasil Ciphertext</label>
+        <div class="result" id="encryptResult"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Dekripsi</h2>
+        <label for="cipherText">Ciphertext</label>
+        <textarea id="cipherText" placeholder="Masukkan ciphertext..."></textarea>
+
+        <div class="row">
+          <div>
+            <label for="decRails">Jumlah Rail</label>
+            <input type="number" id="decRails" value="4" min="2" />
+          </div>
+          <div>
+            <label for="decKey">Key Numerik</label>
+            <input type="number" id="decKey" value="3124" min="1" />
+          </div>
+        </div>
+
+        <button onclick="handleDecrypt()">Dekripsi</button>
+
+        <label>Hasil Plaintext</label>
+        <div class="result" id="decryptResult"></div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Pricilia Apriana 101032300056
+    </div>
+  </div>
+
+  <script>
+    function removeSpaces(text) {
+      return text.replace(/ /g, '').toUpperCase();
+    }
+
+    function alphaPos2Digit(ch) {
+      return String(ch.charCodeAt(0) - 'A'.charCodeAt(0) + 1).padStart(2, '0');
+    }
+
+    function generatePatternByDigits(length, rails, key) {
+      if (rails <= 1) return Array(length).fill(0);
+
+      const digits = String(key).split('').map(Number);
+      const rowPositions = [];
+
+      let row = key % rails;
+      let direction = key % 2 === 0 ? -1 : 1;
+
+      if (row === 0 && direction === -1) direction = 1;
+      if (row === rails - 1 && direction === 1) direction = -1;
+
+      let digitIndex = 0;
+      let currentLimit = digits[digitIndex];
+      let stepCount = 0;
+
+      for (let i = 0; i < length; i++) {
+        rowPositions.push(row);
+        stepCount += 1;
+
+        if (stepCount === currentLimit) {
+          direction *= -1;
+          digitIndex = (digitIndex + 1) % digits.length;
+          currentLimit = digits[digitIndex];
+          stepCount = 0;
+        }
+
+        let nextRow = row + direction;
+        if (nextRow < 0 || nextRow >= rails) {
+          direction *= -1;
+          nextRow = row + direction;
+        }
+
+        row = nextRow;
+      }
+
+      return rowPositions;
+    }
+
+    function stage1Encrypt(text, rails, key) {
+      text = removeSpaces(text);
+      if (!text) return '';
+
+      const rowPositions = generatePatternByDigits(text.length, rails, key);
+      const railsData = Array.from({ length: rails }, () => []);
+
+      for (let i = 0; i < text.length; i++) {
+        railsData[rowPositions[i]].push(text[i]);
+      }
+
+      let result = '';
+      for (let row = rails - 1; row >= 0; row--) {
+        result += railsData[row].slice().reverse().join('');
+      }
+
+      return result;
+    }
+
+    function stage2Encode(stage1Text, key) {
+      const keyDigits = String(key).split('');
+      let keyIndex = 0;
+      let finalCipher = '';
+
+      for (let i = 0; i < stage1Text.length; i++) {
+        const pos = i + 1;
+        const ch = stage1Text[i];
+
+        if (pos % 2 === 1) {
+          finalCipher += ch;
+        } else {
+          finalCipher += alphaPos2Digit(ch) + keyDigits[keyIndex];
+          keyIndex = (keyIndex + 1) % keyDigits.length;
+        }
+      }
+
+      return finalCipher;
+    }
+
+    function encryptCustom(plaintext, rails, key) {
+      const stage1 = stage1Encrypt(plaintext, rails, key);
+      return stage2Encode(stage1, key);
+    }
+
+    function stage2Decode(ciphertext) {
+      let result = '';
+      let i = 0;
+      let position = 1;
+
+      while (i < ciphertext.length) {
+        if (position % 2 === 1) {
+          result += ciphertext[i];
+          i += 1;
+        } else {
+          const alphabetNum = ciphertext.slice(i, i + 2);
+          const ch = String.fromCharCode(parseInt(alphabetNum, 10) + 'A'.charCodeAt(0) - 1);
+          result += ch;
+          i += 3;
+        }
+        position += 1;
+      }
+
+      return result;
+    }
+
+    function stage1Decrypt(stage1Text, rails, key) {
+      if (!stage1Text) return '';
+
+      const rowPositions = generatePatternByDigits(stage1Text.length, rails, key);
+      const countPerRow = Array(rails).fill(0);
+      rowPositions.forEach(row => countPerRow[row]++);
+
+      const railsData = Array.from({ length: rails }, () => []);
+      let index = 0;
+
+      for (let row = rails - 1; row >= 0; row--) {
+        const count = countPerRow[row];
+        const chunk = stage1Text.slice(index, index + count);
+        index += count;
+        railsData[row] = chunk.split('').reverse();
+      }
+
+      const rowUsed = Array(rails).fill(0);
+      let plaintext = '';
+
+      for (const row of rowPositions) {
+        plaintext += railsData[row][rowUsed[row]];
+        rowUsed[row] += 1;
+      }
+
+      return plaintext;
+    }
+
+    function decryptCustom(ciphertext, rails, key) {
+      const stage1Text = stage2Decode(ciphertext);
+      return stage1Decrypt(stage1Text, rails, key);
+    }
+
+    function handleEncrypt() {
+      const plaintext = document.getElementById('plainText').value;
+      const rails = parseInt(document.getElementById('encRails').value, 10);
+      const key = parseInt(document.getElementById('encKey').value, 10);
+
+      if (!plaintext || !rails || !key) {
+        document.getElementById('encryptResult').textContent = 'Mohon isi semua data dengan benar.';
+        return;
+      }
+
+      document.getElementById('encryptResult').textContent = encryptCustom(plaintext, rails, key);
+    }
+
+    function handleDecrypt() {
+      const ciphertext = document.getElementById('cipherText').value.trim().toUpperCase();
+      const rails = parseInt(document.getElementById('decRails').value, 10);
+      const key = parseInt(document.getElementById('decKey').value, 10);
+
+      if (!ciphertext || !rails || !key) {
+        document.getElementById('decryptResult').textContent = 'Mohon isi semua data dengan benar.';
+        return;
+      }
+
+      try {
+        document.getElementById('decryptResult').textContent = decryptCustom(ciphertext, rails, key);
+      } catch (e) {
+        document.getElementById('decryptResult').textContent = 'Ciphertext tidak valid atau input salah.';
+      }
+    }
+  </script>
+</body>
+</html>
